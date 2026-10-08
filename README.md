@@ -1,104 +1,236 @@
-# AI-Based Expiry-Aware Dynamic Discount System 🏷️📉
+AI-Based Expiry-Aware Dynamic Discount System 🏷️📉
 
-![Status](https://img.shields.io/badge/Status-Development-orange)
-![Version](https://img.shields.io/badge/Version-1.0-blue)
-![Tech Stack](https://img.shields.io/badge/Tech_Stack-FastAPI%20%7C%20React%20%7C%20RL-success)
+"Status" (https://img.shields.io/badge/Status-Development-orange)
+"Version" (https://img.shields.io/badge/Version-1.0-blue)
+"Tech Stack" (https://img.shields.io/badge/Tech_Stack-FastAPI%20%7C%20React%20%7C%20RL-success)
 
-## 📖 Project Overview
-This project is a full-stack, AI-driven inventory management and Point-of-Sale (POS) dashboard. Based on research for expiration-aware pricing, the system replaces static markdown rules with an **Adaptive Reinforcement Learning (RL) Engine**. 
+📖 Project Overview
 
-The AI agent dynamically adjusts discount percentages based on real-time inventory levels and remaining shelf-life to maximize revenue while minimizing food and product wastage.
+This project is a full-stack, AI-driven inventory management and Point-of-Sale (POS) dashboard.
 
----
+The system uses an Adaptive Reinforcement Learning (RL) Engine to replace static discount rules with dynamic, expiry-aware pricing.
 
-## 🧩 Core Modules: What to Do & How to Build It
+The AI agent dynamically adjusts discount percentages based on:
 
-This system is divided into four main modules. Below is a clear breakdown of what each module does and the professional strategy for implementing it.
+- Remaining shelf life
+- Current inventory level
+- Unsold stock
+- Customer purchasing behavior
 
-### Module 1: Inventory & Product Management (The Data Foundation)
-* **What it does:** Tracks all store catalog items, specific batch deliveries, and monitors shelf life in real-time.
-* **How to build it:**
-  1. **Database Setup:** Use PostgreSQL to create `Product` and `Batch` tables. Ensure batches have `mfg_date` and `expiry_date` columns.
-  2. **API Endpoints:** Build REST APIs in FastAPI to Create, Read, Update, and Delete (CRUD) products and batches.
-  3. **Expiry Radar (Cron Job):** Write a background task (using Python's `APScheduler` or `Celery`) that runs daily at midnight to calculate the remaining shelf life (`Days Left = Expiry - Today`) for every active batch.
-
-### Module 2: Reinforcement Learning (RL) Engine (The AI Brain)
-* **What it does:** Calculates optimal dynamic discounts (e.g., 10%, 30%, 50%) based on real-time inventory conditions to avoid waste.
-* **How to build it:**
-  1. **Environment Setup:** Use Python's `Gymnasium` library to create a custom retail environment.
-  2. **State & Action Definition:** Define the State as `[Days Until Expiry, Unsold Stock]` and Actions as discrete discount percentages `[0%, 15%, 30%, 50%, 75%]`.
-  3. **Reward Logic:** Code a reward function that returns a positive number (Profit Margin) when an item sells, and a highly negative number (-Cost Price) when an item reaches 0 days and expires.
-  4. **Training:** Implement a Q-Learning or PPO algorithm to let the agent learn offline using simulated data, then save the trained model as a `.pkl` or `.pt` file for the live server to use.
-
-### Module 3: POS & Checkout Simulator (The Transaction Engine)
-* **What it does:** Simulates a retail checkout, proving the AI responds correctly to purchasing behavior and stock reduction.
-* **How to build it:**
-  1. **Pricing Fetcher API:** Create a FastAPI endpoint `/api/price/` that the frontend calls when an item is scanned. This API queries the RL model (Module 2) to get the live discount.
-  2. **Transaction Logic:** Build a POST endpoint for the checkout cart. When a user buys an item, deduct the quantity from the specific Batch in the database.
-  3. **AI Feedback Loop:** Immediately after the stock is deducted, send the financial result (Profit) back to the RL Engine so it can update its learning policy in real time.
-
-### Module 4: Full-Stack Admin Dashboard (UI & Analytics)
-* **What it does:** The visual interface for store managers to monitor inventory, review AI decisions, and see financial analytics.
-* **How to build it:**
-  1. **Frontend Framework:** Scaffold a React application using Vite and Tailwind CSS.
-  2. **Inventory View:** Build a data table fetching data from Module 1. Color-code the rows: Red (1-2 days left), Yellow (3-5 days), Green (Safe).
-  3. **POS View:** Build a simple split-screen layout with a barcode scanner simulation on the left and a shopping cart on the right.
-  4. **Analytics Dashboard:** Use a charting library like `Recharts` to plot "Revenue Saved" vs "Wastage Cost" over time to prove the AI's ROI.
+The main goal is to maximize revenue while minimizing product wastage.
 
 ---
 
-## 🏗️ System Architecture Diagrams
+🧩 Core Modules
 
-### 1. High-Level Architecture Flow
-This shows how the frontend, backend, database, and AI engine communicate.
+The system is divided into four major modules.
 
-```mermaid
-graph TD
-    subgraph Frontend ["Frontend Dashboard (React.js)"]
-        A[Admin Expiry Radar]
-        B[Wastage & Revenue Analytics]
-        C[POS Checkout Simulator]
-    end
+Module 1: Inventory & Product Management
 
-    subgraph Backend ["Backend Server (FastAPI / Python)"]
-        D[Inventory Controller]
-        E[Transaction Processor]
-        F[Pricing Endpoint]
-    end
+What it does
 
-    subgraph AI_Engine ["RL AI Engine (Gymnasium)"]
-        G[State Observer: Days Left & Stock]
-        H[RL Agent: Policy Model]
-        I[Reward Calculator]
-    end
+Tracks:
 
-    subgraph Database ["Database (PostgreSQL)"]
-        J[(Products & Batches)]
-        K[(Sales Transactions)]
-        L[(RL Training Logs)]
-    end
+- Store products
+- Product batches
+- Manufacturing dates
+- Expiry dates
+- Initial quantity
+- Current stock
+- Current discount
 
-    A <-->|REST API| D
-    B <-->|REST API| D
-    C <-->|REST API| E
-    C -->|Fetch Live Price| F
+How to build it
 
-    D <-->|SQL| J
-    E -->|Insert Record| K
-    
-    F -->|Request Discount| H
-    H -->|Query State| G
-    G -.->|Read Expiry Data| J
-    E -->|Trigger Reward Signal| I
-    I -->|Update Policy| H
-    H -->|Log Decisions| L
-```
+1. Use PostgreSQL to create "Product" and "Batch" tables.
+2. Store "mfg_date" and "expiry_date" for every batch.
+3. Build CRUD APIs using FastAPI.
+4. Calculate remaining shelf life:
 
-### 2. Database Schema (ER Diagram)
-Defines the relational data structure required for the system.
+Days Left = Expiry Date - Current Date
 
-```mermaid
+5. Run a scheduled background task using APScheduler or Celery.
+
+---
+
+Module 2: Reinforcement Learning Engine
+
+What it does
+
+The RL engine determines the best discount based on the current inventory state.
+
+Example:
+
+Days Left = 3
+Stock = 20
+       ↓
+RL Agent
+       ↓
+30% Discount
+
+State
+
+The state contains:
+
+[Days Until Expiry, Unsold Stock]
+
+Actions
+
+The agent can select:
+
+0%
+15%
+30%
+50%
+75%
+
+Reward
+
+The reward function encourages profitable sales and penalizes expired inventory.
+
+Sale → Positive Reward
+Expired Product → Negative Reward
+
+Training
+
+The RL model can be trained offline using simulated retail data.
+
+Possible algorithms:
+
+- Q-Learning
+- PPO
+
+The trained model can then be saved and loaded by the FastAPI backend.
+
+---
+
+Module 3: POS & Checkout Simulator
+
+What it does
+
+The POS module simulates a retail checkout system.
+
+When a product is scanned:
+
+Product Scan
+     ↓
+FastAPI
+     ↓
+Get Batch State
+     ↓
+RL Agent
+     ↓
+Calculate Discount
+     ↓
+Display Final Price
+
+Main operations
+
+1. Scan product.
+2. Fetch batch information.
+3. Get current discount from the RL agent.
+4. Calculate final price.
+5. Add product to cart.
+6. Complete checkout.
+7. Reduce inventory.
+8. Calculate reward.
+9. Send reward to the RL agent.
+
+---
+
+Module 4: Full-Stack Admin Dashboard
+
+The dashboard allows store managers to monitor the complete system.
+
+Inventory View
+
+Products can be classified based on remaining shelf life:
+
+Days Left| Status
+1–2 days| 🔴 Critical
+3–5 days| 🟡 Warning
+More than 5 days| 🟢 Safe
+
+POS View
+
+The POS interface contains:
+
+- Product scanner
+- Product information
+- AI discount
+- Shopping cart
+- Final price
+- Checkout button
+
+Analytics
+
+The dashboard displays:
+
+- Revenue
+- Wastage cost
+- Revenue saved
+- Products sold
+- Products expired
+- Discount decisions
+
+---
+
+🏗️ System Architecture
+
+1. High-Level Architecture
+
+flowchart TD
+
+    A[React Frontend]
+
+    A1[Inventory Dashboard]
+    A2[POS Checkout]
+    A3[Analytics Dashboard]
+
+    B[FastAPI Backend]
+
+    B1[Inventory Controller]
+    B2[Transaction Processor]
+    B3[Pricing API]
+
+    C[RL AI Engine]
+
+    C1[State Observer]
+    C2[RL Agent]
+    C3[Reward Calculator]
+
+    D[(PostgreSQL Database)]
+
+    D1[(Products & Batches)]
+    D2[(Sales Transactions)]
+    D3[(RL Training Logs)]
+
+    A --> A1
+    A --> A2
+    A --> A3
+
+    A1 --> B1
+    A2 --> B2
+    A2 --> B3
+    A3 --> B1
+
+    B1 --> D1
+    B2 --> D2
+
+    B3 --> C2
+    C2 --> C1
+    C1 --> D1
+
+    B2 --> C3
+    C3 --> C2
+
+    C2 --> D3
+
+---
+
+2. Database ER Diagram
+
 erDiagram
+
     PRODUCT {
         int ProductID PK
         string Name
@@ -106,7 +238,7 @@ erDiagram
         float BasePrice
         float CostPrice
     }
-    
+
     BATCH {
         int BatchID PK
         int ProductID FK
@@ -116,7 +248,7 @@ erDiagram
         date ExpiryDate
         float CurrentDiscountPct
     }
-    
+
     TRANSACTION {
         int TransactionID PK
         int BatchID FK
@@ -124,162 +256,419 @@ erDiagram
         float FinalPricePaid
         datetime Timestamp
     }
-    
+
     RL_LOG {
         int LogID PK
         int BatchID FK
-        string StateVector "DaysLeft, Qty"
-        float ActionTaken "Discount %"
+        string StateVector
+        float ActionTaken
         float RewardReceived
         datetime Timestamp
     }
 
-    PRODUCT ||--o{ BATCH : "has"
-    BATCH ||--o{ TRANSACTION : "records sales"
-    BATCH ||--o{ RL_LOG : "generates training data"
-```
+    PRODUCT ||--o{ BATCH : contains
+    BATCH ||--o{ TRANSACTION : records
+    BATCH ||--o{ RL_LOG : generates
 
-### 3. Object-Oriented Class Diagram
-Outlines the backend code structure, classes, and methods.
+---
 
-```mermaid
+3. Object-Oriented Class Diagram
+
 classDiagram
+
     class InventoryController {
         +addBatch(productID, qty, mfgDate, expiryDate)
         +updateStock(batchID, qtySold)
-        +getExpiringBatches(thresholdDays) List
+        +getExpiringBatches(thresholdDays)
     }
-    
+
     class PricingAgent {
-        -List discountBrackets
-        +observeState(batchID) State
-        +chooseAction(State) float
-        +updatePolicy(State, Action, Reward)
+        -discountBrackets
+        +observeState(batchID)
+        +chooseAction(state)
+        +updatePolicy(state, action, reward)
     }
-    
+
     class POSCheckout {
         +scanItem(batchID)
         +fetchDiscount(batchID)
         +completeTransaction(cart)
     }
-    
+
     class RewardCalculator {
-        +calculateSaleReward(margin) float
-        +calculateWastePenalty(cost, qty) float
+        +calculateSaleReward(margin)
+        +calculateWastePenalty(cost, qty)
     }
 
-    POSCheckout --> InventoryController : Triggers stock update
-    POSCheckout --> PricingAgent : Requests current discount
-    POSCheckout --> RewardCalculator : Triggers sale event
-    RewardCalculator --> PricingAgent : Sends reward signal
-```
+    POSCheckout --> InventoryController : updates stock
+    POSCheckout --> PricingAgent : requests discount
+    POSCheckout --> RewardCalculator : calculates reward
+    RewardCalculator --> PricingAgent : sends reward
 
-### 4. POS Checkout & AI Learning Flow (Sequence Diagram)
-Shows the exact order of operations when a customer buys a discounted item.
+---
 
-```mermaid
+4. POS Checkout & AI Learning Flow
+
 sequenceDiagram
+
     autonumber
+
     actor Customer as POS Simulator
     participant API as FastAPI Backend
-    participant DB as PostgreSQL Database
+    participant DB as PostgreSQL
     participant AI as RL Pricing Agent
 
     Customer->>API: GET /api/price?batchID=105
-    API->>DB: Query current stock & expiry date
-    DB-->>API: Return (DaysLeft: 3, Stock: 20)
-    API->>AI: Request action for state (3, 20)
-    AI-->>API: Return discount (e.g., 30%)
-    API-->>Customer: Display Price with 30% Off
 
-    Customer->>API: POST /api/checkout (Buy 2 units)
-    API->>DB: Deduct 2 units from Batch 105
-    DB-->>API: Confirm stock updated
-    API->>AI: Send positive reward (+Profit Margin)
-    AI->>AI: Update Q-Table / Learning Policy
-    API-->>Customer: Transaction Successful
-```
+    API->>DB: Get stock and expiry
+    DB-->>API: DaysLeft=3, Stock=20
 
-### 5. Product Batch Lifecycle (State Diagram)
-Shows how a batch of goods transitions from full price to clearance to sold out/expired.
+    API->>AI: Request action for state
 
-```mermaid
+    AI-->>API: Return 30% discount
+
+    API-->>Customer: Display discounted price
+
+    Customer->>API: POST /api/checkout
+
+    API->>DB: Deduct 2 units
+    DB-->>API: Stock updated
+
+    API->>AI: Send sale reward
+
+    AI->>AI: Update learning policy
+
+    API-->>Customer: Transaction successful
+
+---
+
+5. Product Batch Lifecycle
+
 stateDiagram-v2
-    [*] --> In_Stock : Batch Added to Inventory
-    
-    In_Stock --> Regular_Price : Shelf Life > 10 Days
-    
-    Regular_Price --> AI_Discount_Phase : Shelf Life <= 10 Days
-    
-    state AI_Discount_Phase {
-        [*] --> Mild_Discount : 10% - 20% Off
-        Mild_Discount --> High_Discount : Expiry Approaching
-        High_Discount --> Clearance : 1-2 Days Left (70% Off)
-    }
-    
-    Regular_Price --> Sold_Out : All Units Purchased
-    AI_Discount_Phase --> Sold_Out : All Units Purchased
-    
-    AI_Discount_Phase --> Expired_Wastage : Days Left = 0 (Unsold)
-    
-    Sold_Out --> [*]
-    Expired_Wastage --> [*] : Trigger Negative AI Reward
-```
+
+    [*] --> InStock
+
+    InStock --> RegularPrice : More than 10 days
+
+    RegularPrice --> AIDiscount : 10 days or less
+
+    AIDiscount --> MildDiscount : 10-20% discount
+
+    MildDiscount --> HighDiscount : Expiry approaching
+
+    HighDiscount --> Clearance : 1-2 days left
+
+    RegularPrice --> SoldOut : Stock reaches zero
+
+    AIDiscount --> SoldOut : Stock reaches zero
+
+    AIDiscount --> Expired : Days left reaches zero
+
+    Expired --> [*] : Negative reward
+
+    SoldOut --> [*]
 
 ---
 
-## 🛠️ Tech Stack
-* **Frontend UI:** React.js, Vite, Tailwind CSS
-* **Data Visualization:** Recharts, Chart.js
-* **Backend API:** FastAPI (Python), Uvicorn, SQLAlchemy
-* **AI/Machine Learning:** Python, Gymnasium, PyTorch / NumPy
-* **Database:** PostgreSQL (Production) / SQLite (Local Development)
+🔄 Overall System Workflow
+
+flowchart LR
+
+    A[Product Added]
+    B[Batch Created]
+    C[Monitor Expiry]
+    D[Observe Stock]
+    E[RL Agent]
+    F[Select Discount]
+    G[Customer Purchase]
+    H[Update Inventory]
+    I[Calculate Reward]
+    J[Update RL Policy]
+    K[Analytics]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    I --> J
+    J --> E
+    H --> K
+    I --> K
 
 ---
 
-## 🚀 Step-by-Step Setup & Run Instructions
+🛠️ Tech Stack
 
-### Prerequisites
-* Python 3.9+ installed
-* Node.js v16+ installed
-* Git installed
+Frontend
 
-### 1. Backend & AI Setup (Terminal 1)
-```bash
-# Clone the repository
-git clone [https://github.com/yourusername/dynamic-discount-system.git](https://github.com/yourusername/dynamic-discount-system.git)
+- React.js
+- Vite
+- Tailwind CSS
+
+Data Visualization
+
+- Recharts
+- Chart.js
+
+Backend
+
+- FastAPI
+- Python
+- Uvicorn
+- SQLAlchemy
+
+AI / Machine Learning
+
+- Python
+- Gymnasium
+- PyTorch
+- NumPy
+
+Database
+
+- PostgreSQL for production
+- SQLite for local development
+
+---
+
+📁 Suggested Project Structure
+
+dynamic-discount-system/
+│
+├── backend/
+│   ├── main.py
+│   ├── database.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── train_rl_agent.py
+│   │
+│   ├── api/
+│   │   ├── products.py
+│   │   ├── batches.py
+│   │   ├── pricing.py
+│   │   └── checkout.py
+│   │
+│   ├── rl/
+│   │   ├── environment.py
+│   │   ├── agent.py
+│   │   └── reward.py
+│   │
+│   ├── models/
+│   │   └── discount_agent.pkl
+│   │
+│   ├── requirements.txt
+│   └── alembic.ini
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   ├── hooks/
+│   │   └── App.jsx
+│   │
+│   ├── package.json
+│   └── vite.config.js
+│
+├── README.md
+└── .gitignore
+
+---
+
+🚀 Step-by-Step Setup
+
+Prerequisites
+
+Install:
+
+- Python 3.9+
+- Node.js 16+
+- Git
+- PostgreSQL
+
+---
+
+1. Backend & AI Setup
+
+Open Terminal 1.
+
+Clone the repository
+
+git clone https://github.com/yourusername/dynamic-discount-system.git
+
+Enter the backend directory
+
 cd dynamic-discount-system/backend
 
-# Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+Create virtual environment
 
-# Install Python dependencies
+python -m venv venv
+
+Activate virtual environment
+
+Windows
+
+venv\Scripts\activate
+
+Linux / macOS
+
+source venv/bin/activate
+
+Install dependencies
+
 pip install -r requirements.txt
 
-# Run initial database setup/migrations
+Run database migrations
+
 alembic upgrade head
 
-# Train the AI Model first (Offline Simulation)
+Train the RL model
+
 python train_rl_agent.py
 
-# Start the FastAPI backend server
+Start FastAPI
+
 uvicorn main:app --reload --port 8000
-```
-*API Documentation will be available at `http://localhost:8000/docs`*
 
-### 2. Frontend Dashboard Setup (Terminal 2)
-```bash
-# Navigate to the frontend directory
-cd dynamic-discount-system/frontend
+FastAPI documentation:
 
-# Install Node modules
-npm install
-
-# Start the React development server
-npm run dev
-```
-*Access the Dashboard at `http://localhost:5173`*
+http://localhost:8000/docs
 
 ---
-*Based on research principles for AI-Based Expiry-Aware Dynamic Discount Systems.*
+
+2. Frontend Setup
+
+Open Terminal 2.
+
+cd dynamic-discount-system/frontend
+
+Install dependencies:
+
+npm install
+
+Start React:
+
+npm run dev
+
+Open:
+
+http://localhost:5173
+
+---
+
+🤖 Example AI Decision
+
+Suppose a batch contains:
+
+Product: Milk
+Stock: 20 units
+Days Left: 3
+Base Price: ₹50
+
+The RL agent observes:
+
+State = [3, 20]
+
+It selects:
+
+Action = 30% discount
+
+The final price becomes:
+
+₹50 × (1 - 0.30)
+
+= ₹35
+
+Therefore:
+
+Original Price : ₹50
+Discount       : 30%
+Final Price    : ₹35
+
+---
+
+📊 Expected Benefits
+
+The system aims to:
+
+- Reduce product wastage
+- Improve inventory turnover
+- Increase revenue recovery
+- Automate discount decisions
+- Adapt discounts according to demand
+- Provide real-time inventory monitoring
+- Help store managers make better pricing decisions
+
+---
+
+🔮 Future Improvements
+
+Possible future enhancements include:
+
+- Demand forecasting
+- Customer behavior prediction
+- Multi-product optimization
+- Deep Reinforcement Learning
+- Barcode scanner integration
+- Real-time notifications
+- Cloud deployment
+- Mobile application
+- Advanced sales forecasting
+- Explainable AI for discount decisions
+
+---
+
+📌 Project Status
+
+Status: 🚧 Development
+
+Version: 1.0
+
+The project is currently under development. The main objective is to build an expiry-aware dynamic pricing system using Reinforcement Learning and demonstrate its effectiveness through a full-stack retail dashboard.
+
+---
+
+📚 Research Inspiration
+
+This project is based on research principles related to:
+
+- Expiration-aware pricing
+- Dynamic discounting
+- Reinforcement Learning
+- Inventory optimization
+- Food and product waste reduction
+- Adaptive pricing strategies
+
+---
+
+👨‍💻 Project Goal
+
+The ultimate goal is to create an intelligent retail system where pricing decisions are automatically adjusted according to inventory conditions, remaining shelf life, and customer purchasing behavior.
+
+Inventory
+    ↓
+Expiry Monitoring
+    ↓
+State Observation
+    ↓
+RL Agent
+    ↓
+Dynamic Discount
+    ↓
+Customer Purchase
+    ↓
+Reward Calculation
+    ↓
+Policy Update
+    ↓
+Better Future Decisions
+
+---
+
+⭐ Key Concept
+
+«Instead of using fixed discount rules, the system learns which discount is most effective for different inventory and expiry conditions.»
